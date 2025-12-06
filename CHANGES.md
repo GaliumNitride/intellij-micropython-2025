@@ -4,6 +4,16 @@ The Changelog
 1.4.6 - 2024-08-28
 ------------------
 
+* Support for 2025.2 IDE versions
+
+### Fixed
+- Updated to latest IntelliJ Platform API
+- Replaced deprecated serialization methods
+- Fixed compatibility with PyCharm 2025.2
+
+1.4.6 - 2024-08-28
+------------------
+
 * Support for 2024.2 IDE versions
   ([#295](https://github.com/JetBrains/intellij-micropython/issues/295))
 

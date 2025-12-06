@@ -51,8 +51,7 @@ class MicroPythonRunConfigurationProducer : LazyRunConfigurationProducer<MicroPy
     val file = context.location?.virtualFile ?: return false
     if (!facetEnabledForElement(file, context.project)) return false
     configuration.path = file.path
-    configuration.setGeneratedName()
-    configuration.setModule(ModuleUtilCore.findModuleForFile(file, context.project))
+    configuration.name = "Flash ${file.name}"
     return true
   }
 

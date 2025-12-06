@@ -18,8 +18,8 @@ package com.jetbrains.micropython.run
 
 import com.intellij.execution.ExecutionResult
 import com.intellij.execution.Executor
-import com.intellij.execution.configuration.AbstractRunConfiguration
 import com.intellij.execution.configurations.ConfigurationFactory
+import com.intellij.execution.configurations.RunConfigurationBase
 import com.intellij.execution.configurations.RunConfigurationWithSuppressedDefaultDebugAction
 import com.intellij.execution.configurations.RunProfileState
 import com.intellij.execution.configurations.RuntimeConfigurationError
@@ -30,6 +30,7 @@ import com.intellij.execution.runners.ProgramRunner
 import com.intellij.facet.ui.ValidationResult
 import com.intellij.openapi.actionSystem.LangDataKeys
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.components.BaseState
 import com.intellij.openapi.components.service
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.module.ModuleUtil
@@ -45,7 +46,6 @@ import com.intellij.util.PlatformUtils
 import com.jetbrains.micropython.repl.MicroPythonReplManager
 import com.jetbrains.micropython.settings.MicroPythonProjectConfigurable
 import com.jetbrains.micropython.settings.microPythonFacet
-import org.jdom.Element
 
 /**
  * @author Mikhail Golubev
@@ -71,12 +71,25 @@ class RunStateWrapper(private val original: RunProfileState, val block: () -> Un
   }
 }
 
-class MicroPythonRunConfiguration(project: Project, factory: ConfigurationFactory) : AbstractRunConfiguration(project, factory), RunConfigurationWithSuppressedDefaultDebugAction {
+class MicroPythonRunConfigurationOptions : BaseState() {
+  var path by string()
+  var runReplOnSuccess by property(false)
+}
 
-  var path: String = ""
-  var runReplOnSuccess: Boolean = false
-  override fun getValidModules() =
-          allModules.filter { it.microPythonFacet != null }.toMutableList()
+class MicroPythonRunConfiguration(project: Project, factory: ConfigurationFactory) 
+  : RunConfigurationBase<MicroPythonRunConfigurationOptions>(project, factory, "MicroPython"), 
+    RunConfigurationWithSuppressedDefaultDebugAction {
+
+  private val myOptions: MicroPythonRunConfigurationOptions
+    get() = super.getOptions() as MicroPythonRunConfigurationOptions
+
+  var path: String
+    get() = myOptions.path.orEmpty()
+    set(value) { myOptions.path = value }
+  
+  var runReplOnSuccess: Boolean
+    get() = myOptions.runReplOnSuccess
+    set(value) { myOptions.runReplOnSuccess = value }
 
   override fun getConfigurationEditor() = MicroPythonRunConfigurationEditor(this)
 
@@ -126,25 +139,6 @@ class MicroPythonRunConfiguration(project: Project, factory: ConfigurationFactor
     facet.pythonPath ?: throw RuntimeConfigurationError("Python interpreter is not found")
     if (!facet.autoDetectDevicePath && facet.devicePath == null) {
       throw RuntimeConfigurationError("Device path is not specified in IDE settings", showSettings)
-    }
-  }
-
-  override fun suggestedName() = "Flash ${PathUtil.getFileName(path)}"
-
-  override fun writeExternal(element: Element) {
-    super.writeExternal(element)
-    element.setAttribute("path", path)
-    element.setAttribute("runReplOnSuccess", if (runReplOnSuccess) "yes" else "no")
-  }
-
-  override fun readExternal(element: Element) {
-    super.readExternal(element)
-    configurationModule.readExternal(element)
-    element.getAttributeValue("path")?.let {
-      path = it
-    }
-    element.getAttributeValue("runReplOnSuccess")?.let {
-      runReplOnSuccess = it == "yes"
     }
   }
 

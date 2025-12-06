@@ -10,8 +10,8 @@ repositories {
 }
 
 plugins {
-    kotlin("jvm") version "2.0.20"
-    id("org.jetbrains.intellij.platform") version "2.0.1"
+    kotlin("jvm") version "2.1.0"
+    id("org.jetbrains.intellij.platform") version "2.1.0"
 }
 
 dependencies {
@@ -40,9 +40,16 @@ java {
 intellijPlatform {
     pluginConfiguration {
         name = "MicroPython"
+        
+        ideaVersion {
+            sinceBuild = "243"
+            untilBuild = "252.*"
+        }
     }
 
     instrumentCode = false
+    
+    buildSearchableOptions = false
 
     publishing {
         token = project.property("publishToken").toString()
@@ -59,9 +66,15 @@ tasks {
     }
     prepareSandbox {
         from("$rootDir") {
-            into("intellij-micropython")
             include("typehints/")
             include("scripts/")
+        }
+    }
+    
+    buildPlugin {
+        from("$rootDir") {
+            include("typehints/**")
+            include("scripts/**")
         }
     }
 }

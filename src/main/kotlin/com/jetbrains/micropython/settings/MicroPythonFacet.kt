@@ -26,6 +26,7 @@ import com.intellij.facet.ui.ValidationResult
 import com.intellij.ide.plugins.IdeaPluginDescriptor
 import com.intellij.ide.plugins.PluginManagerCore
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.extensions.PluginId
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.module.ModuleManager
@@ -53,6 +54,7 @@ class MicroPythonFacet(facetType: FacetType<out Facet<*>, *>, module: Module, na
 
   companion object {
     private const val PLUGIN_ID = "intellij-micropython"
+    private val LOG = Logger.getInstance(MicroPythonFacet::class.java)
 
     val scriptsPath: String
       get() = "${pluginDescriptor.pluginPath}/scripts"
@@ -84,23 +86,44 @@ class MicroPythonFacet(facetType: FacetType<out Facet<*>, *>, module: Module, na
   fun checkValid(): ValidationResult {
     val provider = configuration.deviceProvider
     val sdk = PythonSdkUtil.findPythonSdk(module)
+    
+    LOG.info("MicroPython validation check for module: ${module.name}")
+    LOG.info("Device provider: ${provider.presentableName}")
+    
     if (sdk == null || PythonSdkUtil.isInvalid(sdk) || PySdkUtil.getLanguageLevelForSdk(sdk).isOlderThan(LanguageLevel.PYTHON35)) {
-      return ValidationResult("${provider.presentableName} support requires valid Python 3.5+ SDK")
+      val result = ValidationResult("${provider.presentableName} support requires valid Python 3.5+ SDK")
+      LOG.warn("Validation failed: SDK issue - ${result.errorMessage}")
+      return result
     }
+    
+    LOG.info("Python SDK: ${sdk.name}, version: ${PySdkUtil.getLanguageLevelForSdk(sdk)}")
+    
     val packageManager = PyPackageManager.getInstance(sdk)
-    val packages = packageManager.packages ?: return ValidationResult.OK
+    val packages = packageManager.packages
+    
+    if (packages == null) {
+      LOG.info("Package list is null, validation passed")
+      return ValidationResult.OK
+    }
+    
+    LOG.info("Installed packages: ${packages.joinToString(", ") { it.name }}")
+    
     val requirements = provider.getPackageRequirements(sdk).filter { it.match(packages) == null }.toList()
     if (requirements.isNotEmpty()) {
       val requirementsText = requirements.joinToString(", ") {
         it.presentableText
       }
-      return ValidationResult("Packages required for ${provider.presentableName} support not found: $requirementsText",
+      val result = ValidationResult("Packages required for ${provider.presentableName} support not found: $requirementsText",
                               object : FacetConfigurationQuickFix("Install Requirements") {
         override fun run(place: JComponent?) {
           PyPackageManagerUI(module.project, sdk, null).install(requirements, emptyList())
         }
       })
+      LOG.warn("Validation failed: Missing packages - $requirementsText")
+      return result
     }
+    
+    LOG.info("Validation passed: All requirements met")
     return ValidationResult.OK
   }
 

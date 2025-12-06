@@ -21,14 +21,22 @@ import com.intellij.facet.ui.FacetEditorContext
 import com.intellij.facet.ui.FacetEditorTab
 import com.intellij.facet.ui.FacetEditorValidator
 import com.intellij.facet.ui.FacetValidatorsManager
+import com.intellij.openapi.components.BaseState
+import com.intellij.util.xmlb.XmlSerializerUtil
 import com.jetbrains.micropython.devices.MicroPythonDeviceProvider
-import org.jdom.Element
 
 /**
  * @author vlan
  */
-class MicroPythonFacetConfiguration : FacetConfiguration {
-  var deviceProvider = MicroPythonDeviceProvider.default
+class MicroPythonFacetConfiguration : FacetConfiguration, BaseState() {
+  var deviceProviderName by string(MicroPythonDeviceProvider.default.persistentName)
+  
+  var deviceProvider: MicroPythonDeviceProvider
+    get() = MicroPythonDeviceProvider.providers.firstOrNull { it.persistentName == deviceProviderName }
+        ?: MicroPythonDeviceProvider.default
+    set(value) {
+      deviceProviderName = value.persistentName
+    }
 
   override fun createEditorTabs(editorContext: FacetEditorContext, validatorsManager: FacetValidatorsManager): Array<FacetEditorTab> {
     val facet = editorContext.facet as MicroPythonFacet
@@ -36,19 +44,5 @@ class MicroPythonFacetConfiguration : FacetConfiguration {
       override fun check() = facet.checkValid()
     })
     return arrayOf(MicroPythonFacetEditorTab(this, facet))
-  }
-
-  @Deprecated("Deprecated in Java")
-  override fun readExternal(element: Element?) {
-    val deviceName = element?.getChild("device")?.getAttribute("name")?.value
-    val device = MicroPythonDeviceProvider.providers.firstOrNull { it.persistentName == deviceName }
-    deviceProvider = device ?: MicroPythonDeviceProvider.default
-  }
-
-  @Deprecated("Deprecated in Java")
-  override fun writeExternal(element: Element?) {
-    val deviceElement = Element("device")
-    deviceElement.setAttribute("name", deviceProvider.persistentName)
-    element?.addContent(deviceElement)
   }
 }
