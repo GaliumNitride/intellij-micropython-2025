@@ -1,5 +1,15 @@
 # MicroPython Plugin for PyCharm and IntelliJ
 
+Added required edits for Pycharm 2025.2 compatibility.
+Tested on Raspberry-Pi.
+Feel free to use.
+
+## Known pending issues
+Flash is not working with the regular run command.
+
+To flash, run externally:
+   python /home/[user]/.local/share/JetBrains/PyCharmCE2025.2/intellij-micropython-2025/scripts/microupload.py -v /dev/ttyACM0 -C [project_folder] [main.py]
+
 [![JetBrains team project](http://jb.gg/badges/team.svg)](https://confluence.jetbrains.com/display/ALL/JetBrains+on+GitHub)
 [![JetBrains IntelliJ Plugins](https://img.shields.io/jetbrains/plugin/v/9777-micropython)](https://plugins.jetbrains.com/plugin/9777-micropython)
 [![JetBrains IntelliJ plugins](https://img.shields.io/jetbrains/plugin/d/9777-micropython)](https://plugins.jetbrains.com/plugin/9777-micropython)
